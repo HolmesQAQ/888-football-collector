@@ -1,5 +1,9 @@
 # 888 足球数据采集器
 
+当前正式版本目标：**v1.0.0**。下载请优先使用 [Releases](https://github.com/HolmesQAQ/888-football-collector/releases) 中已发布的固定版本附件。
+
+[更新日志](CHANGELOG.md) · [版本管理约定](RELEASING.md) · [v1.0.0 说明](releases/v1.0.0.md)
+
 本地采集 500 与澳客公开竞彩页面，按销售日保存五玩法赔率、赛果和原始证据。使用 Python 标准库，无需安装第三方依赖。
 
 ## 下载与运行

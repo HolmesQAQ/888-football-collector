@@ -21,6 +21,7 @@ from model import now, TZ, PROFILE, OUTCOMES, DIMENSIONS, digest, compare
 from results import attach_results
 
 BASE = Path(__file__).resolve().parent
+VERSION = (BASE / 'VERSION').read_text('utf-8').strip()
 UA = 'Local888Collector/1.0'
 MAX_BODY = 12 * 1024 * 1024
 
@@ -218,7 +219,7 @@ def export(folder, report):
         detail += '</details>'
     doc='''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>888 采集报告</title>
     <style>body{font:15px/1.7 system-ui;background:#f4f7fb;color:#17243b;margin:36px}main{max-width:1400px;margin:auto}table{border-collapse:collapse;width:100%;background:white;margin:18px 0}td,th{padding:10px;text-align:left;border-bottom:1px solid #ddd}small{color:#52647a}details{background:white;padding:12px;margin:10px 0}.note{padding:18px;background:#fff2d8;border-radius:8px}a{color:#145ec0}</style><main>'''
-    doc += '<h1>888 足球数据采集报告</h1><p>销售日：'+e(report['sale_date'])+' · 采集时间：'+e(report['created_at'])+'</p>'
+    doc += '<h1>888 足球数据采集报告</h1><p>采集器 v'+e(report.get('collector_version','未记录'))+' · 销售日：'+e(report['sale_date'])+' · 采集时间：'+e(report['created_at'])+'</p>'
     doc += '<p class="note">'+e(report['status'])+' — 这是赔率观察快照，不是完整分析数据包。来源报价时间未知时保持空值；历史数据不可当作当时赛前可得数据。</p>'
     doc += '<p><a href="snapshot.json">完整 JSON</a> · <a href="odds.csv">赔率 CSV</a> · <a href="results.csv">赛果 CSV</a> · <a href="quality.json">质量报告</a></p>'
     doc += '<h2>来源状态</h2><table><tr><th>来源</th><th>解析状态</th><th>比赛数</th><th>赔率已取得 / 54项基准</th><th>详情</th><th>比分采集</th></tr>'+source_rows+'</table><p>PARSED 表示已解析出比赛；具体取得数量见上表。未开售玩法可能没有赔率。销售截止不等于完赛；未取得的比分保留为空。</p>'
@@ -234,7 +235,7 @@ def collect(sale_date, output=None, sources=('500','okooo'), imports=None, alias
     rid=datetime.now(TZ).strftime('%Y%m%dT%H%M%S')+'-'+uuid.uuid4().hex[:8]
     folder=root/rid; (folder/'raw').mkdir(parents=True)
     fetch=Fetcher(folder,delay,stop)
-    report=dict(schema='888-ODDS-SNAPSHOT-v1',rule_profile=PROFILE,run_id=rid,sale_date=sale_date,
+    report=dict(schema='888-ODDS-SNAPSHOT-v1',collector_version=VERSION,rule_profile=PROFILE,run_id=rid,sale_date=sale_date,
         created_at=now(),kind='ODDS_SNAPSHOT_ONLY',ready_for_analysis=False,sources=[],matches=[],comparisons=[],attempts=[])
     imports=imports or {}
     calendar_path=BASE/'market_calendar.json'

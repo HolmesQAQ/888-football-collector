@@ -8,7 +8,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs, unquote
-from collector import collect, BASE
+from collector import collect, BASE, VERSION
 from model import TZ
 
 PAGE = r'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>888 足球数据采集器</title>
@@ -52,7 +52,7 @@ def serve(port=0, open_browser=True):
                 self.send('本地会话未授权',status=403);return
             path=unquote(urlsplit(self.path).path)
             if path=='/':
-                self.send(PAGE.replace('TODAY',datetime.now(TZ).date().isoformat()),'text/html; charset=utf-8')
+                self.send(PAGE.replace('TODAY',datetime.now(TZ).date().isoformat()).replace('足球数据采集器</h1>','足球数据采集器 v'+VERSION+'</h1>'),'text/html; charset=utf-8')
             elif path=='/api/status':
                 with lock:payload=json.dumps(state,ensure_ascii=False)
                 self.send(payload)
