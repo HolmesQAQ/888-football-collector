@@ -70,7 +70,7 @@ def summary_lines(report, rows=None):
         lines += ['', '供 AI 阅读：ai_input.json（含赔率、赛果、球队资料及缺项）']
         for m in report['matches']:
             f=m.get('team_evidence',{})
-            counts=' / '.join(role+'='+str(len(t['eligible_prior_records']))+'场此前战绩 / '+str(len(t['h2h_records']))+'场窗口内交锋 / '+str(len(t.get('future_10d_observed_schedule',[])))+'场未来10天页面赛程' for role,t in f.get('teams',{}).items())
+            counts=' / '.join(role+'='+str(len(t['eligible_prior_records']))+'场近一个月战绩 / '+str(len(t['h2h_records']))+'场窗口内交锋 / '+str(len(t.get('future_10d_observed_schedule',[])))+'场未来10天页面赛程' for role,t in f.get('teams',{}).items())
             lines.append(m['source']+' '+m['match_no']+' 球队资料：'+f.get('status','未尝试')+' '+counts)
         lines.append('球队资料为有限窗口，积分为当前未注明日期快照，不能当作历史赛前排名。')
     return lines

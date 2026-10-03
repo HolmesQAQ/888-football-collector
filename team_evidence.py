@@ -1,5 +1,6 @@
 """Bounded, source-observed team evidence. No predictions or historical rank inference."""
 import re
+from calendar import monthrange
 from datetime import date, timedelta
 from dom import Tree, Node
 from adapters import decode
@@ -104,10 +105,15 @@ def parse_team(body, team_id, url, at):
 def for_match(page, kickoff, opponent, match_id):
     # Day-only source cannot prove ordering on match day: exclude the whole day.
     cutoff=date.fromisoformat(kickoff[:10]).isoformat()
-    prior=[r for r in page['records'] if r['date']<cutoff and r['source_match_id']!=match_id]
+    target=date.fromisoformat(cutoff)
+    year,month=(target.year-1,12) if target.month==1 else (target.year,target.month-1)
+    start=date(year,month,min(target.day,monthrange(year,month)[1])).isoformat()
+    prior=[r for r in page['records'] if start<=r['date']<cutoff and r['source_match_id']!=match_id]
+    scoped_page=dict(page,records=prior)
     end=(date.fromisoformat(cutoff)+timedelta(days=10)).isoformat()
     future=[r for r in page.get('upcoming_schedule',[]) if cutoff<r['date']<=end and r['source_match_id']!=match_id]
-    return dict(**page,eligible_prior_records=prior,
+    return dict(**scoped_page,eligible_prior_records=prior,
+        history_start_inclusive=start,history_window="PREVIOUS_CALENDAR_MONTH",
         future_10d_observed_schedule=future,
         days_since_last_listed_match=(date.fromisoformat(cutoff)-date.fromisoformat(prior[0]['date'])).days if prior else None,
         interval_scope='CALENDAR_DAYS_FROM_LISTED_RECORD_NOT_VERIFIED_REST_TIME',
@@ -160,7 +166,7 @@ def enrich(matches, fetch, imported_sources=(), log=print):
             facts['teams'][role]=for_match(cache[tid],m['kickoff_at'],opp,m['source_match_id'])
         if facts['teams']:
             facts['status']='PARTIAL'
-            facts['gaps']+=['最多100条源站记录，仍不保证完整交锋史；按目标比赛日期过滤','比分口径未证明为90分钟，不据此计算胜率或净胜球','积分为当前页面未注明日期快照，禁止作为历史赛前排名']
+            facts['gaps']+=['仅保留目标比赛日前一个自然月战绩和交锋；不足场数不向前补齐','比分口径未证明为90分钟，不据此计算胜率或净胜球','积分为当前页面未注明日期快照，禁止作为历史赛前排名']
         for dim in ('recent_3_5','home_away_performance','h2h_recent','motivation_rank_phase','schedule_density','future_7_10d_priority'):
             m['coverage_draft'][dim].update(collection_stage='PARTIAL' if facts['teams'] else 'UNAVAILABLE',
                 evidence_status=None,reason='见 team_evidence；窗口有限，未独立核验，不代表该维度完整')

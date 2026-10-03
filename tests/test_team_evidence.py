@@ -84,4 +84,4 @@ class TeamEvidenceTests(unittest.TestCase):
         ids={r['source_match_id'] for r in ai['eligible_prior_records']}
         self.assertNotIn('1495377',ids)
         self.assertTrue(set(ai['recent_3_ids']) <= ids)
-        self.assertEqual(len(ai['recent_5_ids']),5)
+        self.assertEqual(len(ai['recent_5_ids']),3)

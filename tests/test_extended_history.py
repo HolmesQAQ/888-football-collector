@@ -17,9 +17,9 @@ class ExtendedHistoryTests(unittest.TestCase):
         p=parse_history(self.data(),'4156',history_url('4156'),AT)
         self.assertEqual(len(p['records']),100)
         m=for_match(p,'2026-09-30T18:30:00+08:00','4143','1495376')
-        self.assertEqual(len(m['eligible_prior_records']),99)
-        self.assertEqual(len(m['recent_10']),10)
-        self.assertEqual(len(m['h2h_records']),4)
+        self.assertEqual(len(m['eligible_prior_records']),5)
+        self.assertEqual(len(m['recent_10']),5)
+        self.assertEqual(len(m['h2h_records']),0)
         self.assertEqual(m['days_since_last_listed_match'],5)
         self.assertEqual(len(m['previous_10d_match_ids']),2)
         self.assertTrue(all(r['date']<'2026-09-30' and r['fulltime_90'] is None for r in m['eligible_prior_records']))
@@ -59,5 +59,18 @@ class ExtendedHistoryTests(unittest.TestCase):
         fetch.get.side_effect=get
         enrich(ms[:1],fetch,log=lambda _:None)
         t=ms[0]['team_evidence']['teams']['home']
-        self.assertEqual(len(t['eligible_prior_records']),9)
+        self.assertEqual(len(t['eligible_prior_records']),3)
         self.assertEqual(t['history_expansion_error'],'HTTP 405')
+
+    def test_calendar_month_boundaries_and_no_backfill(self):
+        from copy import deepcopy
+        template=parse_history(self.data(),'4156',history_url('4156'),AT)['records'][0]
+        for target,start,before in [('2026-03-31','2026-02-28','2026-02-27'),('2024-03-31','2024-02-29','2024-02-28'),('2026-01-31','2025-12-31','2025-12-30')]:
+            rows=[]
+            for i,day in enumerate((before,start,target)):
+                row=deepcopy(template);row.update(date=day,source_match_id=str(i+1));rows.append(row)
+            result=for_match({'records':rows},target+'T18:00:00+08:00','4143','999')
+            self.assertEqual(result['history_start_inclusive'],start)
+            self.assertEqual([r['date'] for r in result['records']],[start])
+            self.assertEqual(len(result['recent_5']),1)
+            self.assertEqual(len(result['h2h_records']),1)
