@@ -98,7 +98,7 @@ class Fetcher:
         if not parser.can_fetch(UA, url):
             # A robots preference is recorded separately from an HTTP access restriction.
             # Explicitly requested public-page collection applies only to this 500 endpoint.
-            if (p.netloc=='liansai.500.com' and re.fullmatch(r'/team/\d+/',p.path) and not p.query) or (p.netloc=='trade.500.com' and p.path=='/jczq/') or (p.netloc=='live.500.com' and p.path=='/' and re.fullmatch(r'e=\d{4}-\d{2}-\d{2}',p.query)):
+            if (p.netloc=='liansai.500.com' and p.path=='/index.php' and re.fullmatch(r'c=teams&a=ajax_fixture&records=100&tid=\d+&hoa=0',p.query)) or (p.netloc=='liansai.500.com' and re.fullmatch(r'/team/\d+/',p.path) and not p.query) or (p.netloc=='trade.500.com' and p.path=='/jczq/') or (p.netloc=='live.500.com' and p.path=='/' and re.fullmatch(r'e=\d{4}-\d{2}-\d{2}',p.query)):
                 self.attempts.append(dict(url=url,fetched_at=now(),status='ROBOTS_NOTICE',
                     policy='USER_REQUESTED_PUBLIC_500_PAGE',
                     note='robots不建议自动抓取；记录提示。仅普通公开GET；403/429/验证页仍停止。'))

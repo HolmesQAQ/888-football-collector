@@ -8,8 +8,8 @@ def ai_matches(matches):
         item['team_evidence']={k:v for k,v in facts.items() if k!='teams'}
         item['team_evidence']['teams']={}
         for role,t in facts.get('teams',{}).items():
-            compact={k:v for k,v in t.items() if k not in ('records','recent_3','recent_5','home_records','away_records','h2h_records')}
-            for group in ('recent_3','recent_5','home_records','away_records','h2h_records'):
+            compact={k:v for k,v in t.items() if k not in ('records','recent_3','recent_5','recent_10','home_records','away_records','h2h_records')}
+            for group in ('recent_3','recent_5','recent_10','home_records','away_records','h2h_records'):
                 compact[group+'_ids']=[r['source_match_id'] for r in t[group]]
             compact['empty_h2h_means']='No matching record in this page window; not proof of no prior meetings.'
             item['team_evidence']['teams'][role]=compact
