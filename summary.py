@@ -66,6 +66,13 @@ def summary_lines(report, rows=None):
         lines.append(f"{r['编号']} {r['赛事']} | {r['主队']} vs {r['客队']}")
         lines.append(f"  {r['来源']} | {r['身份核对']} | 90分钟 {r['90分钟比分']} | 半场 {r['半场比分']} | 赔率差异 {r['赔率差异项数']} 项")
         lines.append('  赛果：'+'；'.join(p+' '+r['赛果_'+p] for p in OUTCOMES))
+    if any(m.get('team_evidence') for m in report['matches']):
+        lines += ['', '供 AI 阅读：ai_input.json（含赔率、赛果、球队资料及缺项）']
+        for m in report['matches']:
+            f=m.get('team_evidence',{})
+            counts=' / '.join(role+'='+str(len(t['eligible_prior_records']))+'场此前战绩' for role,t in f.get('teams',{}).items())
+            lines.append(m['source']+' '+m['match_no']+' 球队资料：'+f.get('status','未尝试')+' '+counts)
+        lines.append('球队资料为有限窗口，积分为当前未注明日期快照，不能当作历史赛前排名。')
     return lines
 
 

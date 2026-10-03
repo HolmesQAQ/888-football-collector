@@ -50,7 +50,8 @@ class Tests(unittest.TestCase):
     def test_500_online_route_collects_all_five_plays(self):
         with tempfile.TemporaryDirectory() as d,patch.object(Fetcher,'get',side_effect=[((FIXTURES/'500.html').read_bytes(),AT),((FIXTURES/'500-live-20260930.html').read_bytes(),AT)]) as get:
             p,r=collect('2026-09-30',d,sources=('500',),log=lambda s:None)
-            self.assertEqual(get.call_count,2)
+            self.assertEqual(get.call_count,6)  # main, results, four unique team pages
+            self.assertTrue(all(m['team_evidence']['status']=='UNAVAILABLE' for m in r['matches']))
             self.assertEqual(len(r['matches']),2)
             self.assertEqual(r['status'],'COLLECTED_NOT_INDEPENDENTLY_VERIFIED')
             for m in r['matches']:

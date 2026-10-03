@@ -4,4 +4,4 @@
 *.yml text eol=lf
 *.bat text eol=crlf
 *.ps1 text eol=crlf
-tests/fixtures/*.html -text
+tests/fixtures/*.html -text -diff

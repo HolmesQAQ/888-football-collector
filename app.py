@@ -68,7 +68,9 @@ def create_server(port=0):
             cookie=self.headers.get('Cookie','')
             return ('session='+token) in cookie.split('; ') or parse_qs(urlsplit(self.path).query).get('token')==[token]
         def send(self,body,kind='application/json; charset=utf-8',status=200):
+            body=body if isinstance(body,bytes) else body.encode('utf-8')
             self.send_response(status);self.send_header('Content-Type',kind)
+            self.send_header('Content-Length',str(len(body)))
             self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff')
             self.send_header('Referrer-Policy','no-referrer')
             if self.authorized():
@@ -88,12 +90,20 @@ def create_server(port=0):
                 self.send(json.dumps({'runs':runs}))
             elif path.startswith('/data/'):
                 root=(BASE/'data').resolve();f=(BASE/path.lstrip('/')).resolve()
-                if not f.is_relative_to(root) or f.name not in ('report.html','snapshot.json','odds.csv','results.csv','quality.json','manifest.json','汇总.csv','先看这里.txt') or not f.is_file():
+                if not f.is_relative_to(root) or f.name not in ('report.html','ai_input.json','snapshot.json','odds.csv','results.csv','quality.json','manifest.json','汇总.csv','先看这里.txt') or not f.is_file():
                     self.send('Not found',status=404);return
                 kind={'.html':'text/html; charset=utf-8','.json':'application/json; charset=utf-8','.csv':'text/csv; charset=utf-8','.txt':'text/plain; charset=utf-8'}[f.suffix]
                 self.send(f.read_bytes(),kind)
             else:self.send('Not found',status=404)
         def do_POST(self):
+            # Drain a bounded request before rejecting it; unread bodies can cause TCP resets on Windows.
+            try:
+                length=int(self.headers.get('Content-Length',0))
+                if not 0<length<10000:raise ValueError('无效请求大小')
+                self.connection.settimeout(5)
+                body=self.rfile.read(length)
+            except (ValueError,OSError):
+                self.send('无效请求大小或读取超时',status=400);return
             if not self.authorized():self.send('Forbidden',status=403);return
             origin=self.headers.get('Origin')
             if origin and origin != 'http://127.0.0.1:'+str(self.server.server_port):
@@ -101,9 +111,7 @@ def create_server(port=0):
             path=urlsplit(self.path).path
             if path=='/api/stop':stop.set();self.send('{}');return
             try:
-                length=int(self.headers.get('Content-Length',0))
-                if not 0<length<10000:raise ValueError('无效请求大小')
-                args=json.loads(self.rfile.read(length))
+                args=json.loads(body)
                 if not isinstance(args,dict):raise ValueError('无效请求')
                 if path in ('/api/open','/api/view','/api/verify','/api/clear-preview','/api/clear'):
                     with lock:
