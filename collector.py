@@ -19,6 +19,8 @@ from urllib.robotparser import RobotFileParser
 from adapters import parse_500, parse_500_live, parse_okooo, parse_okooo_more, decode
 from model import now, TZ, PROFILE, OUTCOMES, DIMENSIONS, digest, compare
 from results import attach_results
+from summary import export_summary, summary_lines
+from activity import data_lock
 
 BASE = Path(__file__).resolve().parent
 VERSION = (BASE / 'VERSION').read_text('utf-8').strip()
@@ -167,6 +169,7 @@ def validate(matches, target):
 
 
 def export(folder, report):
+    export_summary(folder, report)
     save_json(folder / 'snapshot.json', report)
     rows = []
     for m in report['matches']:
@@ -223,13 +226,19 @@ def export(folder, report):
     doc += '<p class="note">'+e(report['status'])+' — 这是赔率观察快照，不是完整分析数据包。来源报价时间未知时保持空值；历史数据不可当作当时赛前可得数据。</p>'
     doc += '<p><a href="snapshot.json">完整 JSON</a> · <a href="odds.csv">赔率 CSV</a> · <a href="results.csv">赛果 CSV</a> · <a href="quality.json">质量报告</a></p>'
     doc += '<h2>来源状态</h2><table><tr><th>来源</th><th>解析状态</th><th>比赛数</th><th>赔率已取得 / 54项基准</th><th>详情</th><th>比分采集</th></tr>'+source_rows+'</table><p>PARSED 表示已解析出比赛；具体取得数量见上表。未开售玩法可能没有赔率。销售截止不等于完赛；未取得的比分保留为空。</p>'
-    doc += '<h2>比赛、赛果与五玩法完整度</h2><table><tr>'+''.join('<th>'+x+'</th>' for x in ['来源','编号','赛事','比赛','开赛','销售状态','比赛状态','半场','90分钟','已取得 / 应有选项'])+'</tr>'+match_rows+'</table>'
+    doc += '<h2>精简汇总</h2><p><a href="汇总.csv">下载合并赔率汇总</a> · <a href="先看这里.txt">文字汇总</a></p><pre style="white-space:pre-wrap">'+e('\n'.join(summary_lines(report)))+'</pre>'
+    doc += '<details><summary>展开分站原始数据与核对详情</summary><h2>比赛、赛果与五玩法完整度</h2><table><tr>'+''.join('<th>'+x+'</th>' for x in ['来源','编号','赛事','比赛','开赛','销售状态','比赛状态','半场','90分钟','已取得 / 应有选项'])+'</tr>'+match_rows+'</table>'
     doc += '<h2>逐场赔率</h2>'+detail+'<h2>同场核对</h2><pre>'+e(json.dumps(report['comparisons'],ensure_ascii=False,indent=2))+'</pre>'
-    doc += '<small>Run: '+e(report['run_id'])+'<br>SHA-256: '+e(report['snapshot_hash'])+'</small></main></html>'
+    doc += '</details><small>Run: '+e(report['run_id'])+'<br>SHA-256: '+e(report['snapshot_hash'])+'</small></main></html>'
     (folder / 'report.html').write_text(doc,encoding='utf-8')
 
 
 def collect(sale_date, output=None, sources=('500','okooo'), imports=None, aliases=None, delay=2, stop=None, log=print):
+    with data_lock(output or BASE/'data'):
+        return _collect(sale_date,output,sources,imports,aliases,delay,stop,log)
+
+
+def _collect(sale_date, output=None, sources=('500','okooo'), imports=None, aliases=None, delay=2, stop=None, log=print):
     date.fromisoformat(sale_date)
     root=Path(output or BASE/'data').resolve();root.mkdir(parents=True,exist_ok=True)
     rid=datetime.now(TZ).strftime('%Y%m%dT%H%M%S')+'-'+uuid.uuid4().hex[:8]
