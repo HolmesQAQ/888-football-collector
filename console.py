@@ -1,6 +1,7 @@
 """Interactive terminal menu; never starts a web server or browser."""
 import json
 import os
+from folders import open_folder
 from datetime import date, datetime
 from collector import BASE, VERSION, collect
 from model import TZ
@@ -77,7 +78,7 @@ def main():
             elif choice == '4' or (choice == '5' and current_folder):
                 folder = current_folder if choice == '4' and current_folder else BASE / 'data'
                 folder.mkdir(parents=True, exist_ok=True)
-                os.startfile(str(folder))
+                open_folder(str(folder))
                 print('已请求打开数据文件夹：', folder)
             elif choice == '6':
                 targets = history_targets(BASE)

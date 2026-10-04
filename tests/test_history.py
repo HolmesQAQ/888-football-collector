@@ -48,6 +48,6 @@ class HistoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             base=Path(d);run=self.setup_files(base)
             report={'sale_date':'2026-10-03','status':'MARKET_CLOSED','sources':[],'matches':[]}
-            with patch.object(console,'BASE',base),patch.object(console,'collect',return_value=(run,report)),patch('builtins.input',side_effect=['1','2026-10-03','1','6','CLEAR','4','0']),patch.object(console.os,'startfile',create=True) as opened,contextlib.redirect_stdout(io.StringIO()):
+            with patch.object(console,'BASE',base),patch.object(console,'collect',return_value=(run,report)),patch('builtins.input',side_effect=['1','2026-10-03','1','6','CLEAR','4','0']),patch.object(console,'open_folder') as opened,contextlib.redirect_stdout(io.StringIO()):
                 console.main()
             opened.assert_called_once_with(str(base/'data'))

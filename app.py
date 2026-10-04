@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+from folders import open_folder
 import secrets
 import threading
 import webbrowser
@@ -36,16 +37,29 @@ async function api(path,data){let r=await fetch(path,{method:data?'POST':'GET',h
 async function startRun(){try{await api('/api/start',{date:document.querySelector('#date').value,source:document.querySelector('#source').value,import500:document.querySelector('#import500').value,importokooo:document.querySelector('#importokooo').value});await poll()}catch(e){document.querySelector('#status').textContent=e.message}}
 async function stopRun(){await api('/api/stop',{})}
 let clearToken=null, displayedRun=null;
-function message(text){document.querySelector('#actionMessage').textContent=text}
+function message(text){let target=document.querySelector('#actionMessage');target.textContent=text;target.scrollIntoView({block:'nearest'})}
 function selectedRun(){let id=document.querySelector('#history').value;if(!id)throw Error('请先选择历史记录');return id}
-async function refreshHistory(){try{let data=await api('/api/history');let select=document.querySelector('#history');select.replaceChildren();let empty=document.createElement('option');empty.value='';empty.textContent='请选择历史记录';select.appendChild(empty);for(let id of data.runs){let option=document.createElement('option');option.value=id;option.textContent=id;select.appendChild(option)}}catch(e){message(e.message)}}
+let historyRefreshSequence=0;
+async function refreshHistory(preferredRun=null){
+ const sequence=++historyRefreshSequence;
+ try{
+  let data=await api('/api/history');
+  if(sequence!==historyRefreshSequence)return;
+  let select=document.querySelector('#history');
+  let desired=preferredRun || select.value || displayedRun || data.runs[0] || '';
+  select.replaceChildren();
+  let empty=document.createElement('option');empty.value='';empty.textContent=data.runs.length?'请选择历史记录':'暂无历史记录';select.appendChild(empty);
+  for(let id of data.runs){let option=document.createElement('option');option.value=id;option.textContent=id;select.appendChild(option)}
+  select.value=data.runs.includes(desired)?desired:(data.runs[0] || '');
+ }catch(e){message(e.message)}
+}
 async function viewHistory(){try{let id=selectedRun();let r=await api('/api/view',{run_id:id});document.querySelector('#compact').textContent=r.summary;message('已显示选中记录')}catch(e){message(e.message)}}
 async function verifyHistory(){try{let r=await api('/api/verify',{run_id:selectedRun()});message(r.errors.length?'校验失败：'+r.errors.join('；'):'校验通过')}catch(e){message(e.message)}}
-async function openFolder(scope){try{let r=await api('/api/open',{scope,run_id:scope==='selected'?selectedRun():null});message(r.message)}catch(e){message(e.message)}}
+async function openFolder(scope){try{let runId=scope==='selected'?selectedRun():null;message('正在打开文件夹…');let r=await api('/api/open',{scope,run_id:runId});message(r.message)}catch(e){message('未能打开文件夹：'+e.message)}}
 function cancelClear(){clearToken=null;document.querySelector('#clearBox').hidden=true;document.querySelector('#clearWord').value=''}
 async function previewClear(){try{let r=await api('/api/clear-preview',{});clearToken=r.token;document.querySelector('#clearDescription').textContent=r.description;document.querySelector('#clearBox').hidden=false;document.querySelector('#clearWord').value=''}catch(e){message(e.message)}}
 async function confirmClear(){try{await api('/api/clear',{token:clearToken,confirmation:document.querySelector('#clearWord').value});cancelClear();displayedRun=null;document.querySelector('#compact').textContent='历史数据已清除。';message('已清除采集归档和历史数据库，程序及环境保留。');await refreshHistory();await poll()}catch(e){message(e.message)}}
-async function poll(){try{let s=await api('/api/status');document.querySelector('#clear').disabled=s.running;document.querySelector('#openCurrent').textContent=s.current_run?'打开本次采集文件夹':'打开数据总文件夹';if(s.current_run && displayedRun!==s.current_run){displayedRun=s.current_run;document.querySelector('#compact').textContent=s.compact||'';refreshHistory();}document.querySelector('#start').disabled=s.running;document.querySelector('#stop').disabled=!s.running;document.querySelector('#status').textContent=s.running?'正在采集…':s.status;document.querySelector('#logs').textContent=s.logs.join('\n')||'日志将在这里显示。';document.querySelector('#summary').textContent=s.summary||'';let d=document.querySelector('#report');d.replaceChildren();if(s.report){let a=document.createElement('a');a.href=s.report;a.target='_blank';a.textContent='打开本轮报告与下载文件';d.appendChild(a)}}catch(e){document.querySelector('#status').textContent='无法连接本地程序：'+e.message}}
+async function poll(){try{let s=await api('/api/status');document.querySelector('#clear').disabled=s.running;document.querySelector('#openCurrent').textContent=s.current_run?'打开本次采集文件夹':'打开数据总文件夹';if(s.current_run && displayedRun!==s.current_run){displayedRun=s.current_run;document.querySelector('#compact').textContent=s.compact||'';await refreshHistory(s.current_run);}document.querySelector('#start').disabled=s.running;document.querySelector('#stop').disabled=!s.running;document.querySelector('#status').textContent=s.running?'正在采集…':s.status;document.querySelector('#logs').textContent=s.logs.join('\n')||'日志将在这里显示。';document.querySelector('#summary').textContent=s.summary||'';let d=document.querySelector('#report');d.replaceChildren();if(s.report){let a=document.createElement('a');a.href=s.report;a.target='_blank';a.textContent='打开本轮报告与下载文件';d.appendChild(a)}}catch(e){document.querySelector('#status').textContent='无法连接本地程序：'+e.message}}
 setInterval(poll,1200);poll();refreshHistory();
 </script></html>'''
 
@@ -121,8 +135,8 @@ def create_server(port=0):
                             scope=args.get('scope')
                             if scope not in ('root','current','selected'):raise ValueError('无效目录选项')
                             folder=archive(args.get('run_id')) if scope=='selected' else archive(state['current_run']) if scope=='current' and state['current_run'] else BASE/'data'
-                            folder.mkdir(parents=True,exist_ok=True);os.startfile(str(folder))
-                            payload={'message':'已请求打开：'+str(folder)}
+                            folder.mkdir(parents=True,exist_ok=True);open_folder(str(folder))
+                            payload={'path':str(folder),'message':'已请求资源管理器打开：'+str(folder)+'。若窗口未出现在前台，请检查任务栏，或复制此路径到资源管理器。'}
                         elif path in ('/api/view','/api/verify'):
                             folder=archive(args.get('run_id'))
                             payload={'errors':verify(folder)} if path=='/api/verify' else {'summary':'\n'.join(summary_lines(json.loads((folder/'snapshot.json').read_text('utf-8'))))}

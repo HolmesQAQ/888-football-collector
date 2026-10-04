@@ -51,7 +51,7 @@ class WebTests(unittest.TestCase):
         self.assertEqual(json.loads(self.api('/api/verify',{'run_id':run}))['errors'],[])
         self.assertFalse(json.loads(self.api('/data/'+run+'/ai_input.json'))['ready_for_analysis'])
         self.assertIn('销售日',self.api('/data/'+run+'/汇总.csv').decode('utf-8-sig'))
-        with patch.object(app.os,'startfile',create=True) as opened:
+        with patch.object(app,'open_folder') as opened:
             self.api('/api/open',{'scope':'current'})
             self.api('/api/open',{'scope':'root'})
             self.api('/api/open',{'scope':'selected','run_id':run})

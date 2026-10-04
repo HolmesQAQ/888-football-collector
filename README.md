@@ -1,8 +1,8 @@
 # 888 足球数据采集器
 
-当前版本：**v1.3.1**。一个完整程序包，两个操作入口，共用同一套采集逻辑和数据。
+当前版本：**v1.3.2**。一个完整程序包，两个操作入口，共用同一套采集逻辑和数据。
 
-[下载正式版本](https://github.com/HolmesQAQ/888-football-collector/releases/latest) · [更新日志](CHANGELOG.md) · [v1.3.1说明](releases/v1.3.1.md) · [版本管理](RELEASING.md)
+[下载正式版本](https://github.com/HolmesQAQ/888-football-collector/releases/latest) · [更新日志](CHANGELOG.md) · [v1.3.2说明](releases/v1.3.2.md) · [版本管理](RELEASING.md)
 
 ## 下载运行
 

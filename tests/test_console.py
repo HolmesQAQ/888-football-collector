@@ -15,7 +15,7 @@ class ConsoleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             base=Path(d);current=base/'data'/'run'
             report={'sale_date':'2026-09-17','status':'NEEDS_REVIEW','sources':[],'matches':[]}
-            with patch.object(console,'BASE',base), patch('builtins.input',side_effect=['4','1','2026-09-17','1','4','5','0']), patch.object(console,'collect',return_value=(current,report)), patch.object(console.os,'startfile',create=True) as opened, contextlib.redirect_stdout(io.StringIO()):
+            with patch.object(console,'BASE',base), patch('builtins.input',side_effect=['4','1','2026-09-17','1','4','5','0']), patch.object(console,'collect',return_value=(current,report)), patch.object(console,'open_folder') as opened, contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(console.main(),0)
                 self.assertEqual([c.args[0] for c in opened.call_args_list],[str(base/'data'),str(current),str(base/'data')])
 
